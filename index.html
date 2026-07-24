@@ -202,7 +202,7 @@
 
     <div id="homePage" class="page active">
         <div class="header-title">文字系統目錄</div>
-        <div class="header-desc">選擇欲學習的文字系統，先進行總覽檢視再開始系統化手寫與發音練習。</div>
+        <div class="header-desc">選擇欲學習的文字系統，先進行總纜檢視再開始系統化手寫與發音練習。</div>
         <div id="langList"></div>
     </div>
 
@@ -237,7 +237,7 @@
                 <canvas id="paintCanvas" width="260" height="260"></canvas>
             </div>
 
-            <div id="statusMsg" class="status-msg">請沿著軌道數字順序滑動完成筆劃</div>
+            <div id="statusMsg" class="status-msg">請由數字 1 開始順應軌道劃過節點</div>
 
             <div style="display: flex; gap: 8px; margin-top: 10px;">
                 <button class="btn secondary" onclick="playCurrentAudio()">播放發音</button>
@@ -317,6 +317,33 @@
         loadPracticeItem();
     }
 
+    // 中點貝茲曲線平滑化演算法
+    function drawSmoothPath(pts, strokeColor, lineWidth) {
+        if (!pts || pts.length < 2) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+
+        if (pts.length === 2) {
+            ctx.lineTo(pts[1].x, pts[1].y);
+        } else {
+            for (let i = 1; i < pts.length - 1; i++) {
+                const xc = (pts[i].x + pts[i + 1].x) / 2;
+                const yc = (pts[i].y + pts[i + 1].y) / 2;
+                ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+            }
+            ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+        }
+
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+        ctx.restore();
+    }
+
     function renderCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const item = currentLang.items[currentIndex];
@@ -324,44 +351,23 @@
 
         const pts = item.checkpoints;
 
-        // 1. 繪製標準筆劃底框軌道 (灰色向量路徑)
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) {
-            ctx.lineTo(pts[i].x, pts[i].y);
-        }
-        ctx.lineWidth = 26;
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-        ctx.restore();
+        // 1. 繪製平滑灰底軌道
+        drawSmoothPath(pts, '#e5e7eb', 20);
 
-        // 2. 繪製使用者已完成的填充筆劃 (深色線條)
+        // 2. 繪製平滑彩色完成筆劃
         if (passedCheckpoints.length > 1) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < passedCheckpoints.length; i++) {
-                ctx.lineTo(pts[i].x, pts[i].y);
-            }
-            ctx.lineWidth = 22;
-            ctx.strokeStyle = '#4f46e5';
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
-            ctx.restore();
+            const activePts = pts.slice(0, passedCheckpoints.length);
+            drawSmoothPath(activePts, '#4f46e5', 16);
         }
 
-        // 3. 繪製軌道節點號碼圈
+        // 3. 繪製節點標號
         pts.forEach((pt, idx) => {
             const isPassed = idx < passedCheckpoints.length;
             const isNext = idx === passedCheckpoints.length;
 
             ctx.save();
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2);
+            ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2);
             ctx.fillStyle = isPassed ? '#10b981' : (isNext ? '#4f46e5' : '#ffffff');
             ctx.fill();
             ctx.strokeStyle = isPassed ? '#059669' : (isNext ? '#3730a3' : '#9ca3af');
@@ -369,7 +375,7 @@
             ctx.stroke();
 
             ctx.fillStyle = (isPassed || isNext) ? '#ffffff' : '#4b5563';
-            ctx.font = 'bold 11px sans-serif';
+            ctx.font = 'bold 10px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(idx + 1, pt.x, pt.y);
@@ -419,8 +425,7 @@
         const targetPt = item.checkpoints[nextIdx];
         const dist = Math.hypot(pos.x - targetPt.x, pos.y - targetPt.y);
 
-        // 手指或筆尖距離目標點 32 像素以內，即自動解鎖該段筆劃
-        if (dist < 32) {
+        if (dist < 30) {
             passedCheckpoints.push(nextIdx);
             renderCanvas();
 
