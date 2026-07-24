@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>多語系文字學習系統</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px 15px;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .menu-card {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .menu-card:active {
+            background-color: #f1f3f5;
+        }
+        .lang-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .lang-status {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        .meta-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        .ipa-info {
+            font-size: 1.2rem;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        .canvas-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .guide-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 150px;
+            color: rgba(0, 0, 0, 0.08);
+            pointer-events: none;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        button {
+            padding: 8px 14px;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 6px;
+            background-color: #0d6efd;
+            color: white;
+            cursor: pointer;
+        }
+        button.secondary { background-color: #6c757d; }
+        button.outline { background-color: transparent; color: #495057; border: 1px solid #ced4da; }
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- 主頁選單視圖 -->
+    <div id="homeView" class="view active">
+        <h1>文字系統學習目錄</h1>
+        <div class="menu-grid" id="menuList"></div>
+    </div>
+
+    <!-- 練習畫布視圖 -->
+    <div id="practiceView" class="view">
+        <div class="nav-bar">
+            <button class="outline" onclick="showHome()">← 返回選單</button>
+            <span id="progressText" class="lang-status">0 / 0</span>
+        </div>
+
+        <div class="card">
+            <div id="charMeta" class="meta-info">-</div>
+            <div id="charIpa" class="ipa-info">-</div>
+            
+            <div class="canvas-container">
+                <div id="guideText" class="guide-text"></div>
+                <canvas id="paintCanvas" width="260" height="260"></canvas>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="playAudio()">發音</button>
+                <button class="outline" onclick="toggleGuide()">描摹線</button>
+                <button class="secondary" onclick="clearCanvas()">清除</button>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 15px; justify-content: space-between;">
+            <button class="secondary" onclick="prevChar()">上一個</button>
+            <button onclick="recordAndNext()">完成並下一個</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 多語系資料庫
+    const database = {
+        thai: {
+            title: "泰文字母 (Thai)",
+            langCode: "th-TH",
+            items: [
+                { id: "th_1", char: "ก", name: "ก ไก่", ipa: "/kɔː/", class: "中音輔音" },
+                { id: "th_2", char: "ข", name: "ข ไข่", ipa: "/kʰɔː/", class: "高音輔音" }
+            ]
+        },
+        japanese: {
+            title: "日文平假名 (Japanese)",
+            langCode: "ja-JP",
+            items: [
+                { id: "jp_1", char: "あ", name: "A (あ)", ipa: "/a/", class: "母音" },
+                { id: "jp_2", char: "い", name: "I (い)", ipa: "/i/", class: "母音" }
+            ]
+        },
+        korean: {
+            title: "韓文諺文基礎 (Korean)",
+            langCode: "ko-KR",
+            items: [
+                { id: "kr_1", char: "ㄱ", name: "Giyeok (ㄱ)", ipa: "/k/ /g/", class: "輔音" },
+                { id: "kr_2", char: "ㄴ", name: "Nieun (ㄴ)", ipa: "/n/", class: "輔音" }
+            ]
+        }
+    };
+
+    let currentLangKey = null;
+    let currentIndex = 0;
+    let showGuideFlag = true;
+    let isDrawing = false;
+
+    const canvas = document.getElementById('paintCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 讀取本地學習紀錄
+    function getProgress(langKey) {
+        const data = localStorage.getItem('script_learning_' + langKey);
+        return data ? JSON.parse(data) : {};
+    }
+
+    // 儲存單一字母練習次數
+    function saveProgress(langKey, charId) {
+        const progress = getProgress(langKey);
+        progress[charId] = (progress[charId] || 0) + 1;
+        localStorage.setItem('script_learning_' + langKey, JSON.stringify(progress));
+    }
+
+    // 初始化主頁目錄
+    function renderMenu() {
+        const menuList = document.getElementById('menuList');
+        menuList.innerHTML = '';
+        
+        Object.keys(database).forEach(key => {
+            const lang = database[key];
+            const progress = getProgress(key);
+            const completedCount = Object.keys(progress).length;
+            
+            const card = document.createElement('div');
+            card.className = 'menu-card';
+            card.onclick = () => startPractice(key);
+            card.innerHTML = `
+                <div>
+                    <div class="lang-title">${lang.title}</div>
+                    <div class="lang-status">已練習 ${completedCount} / ${lang.items.length} 字</div>
+                </div>
+                <span>→</span>
+            `;
+            menuList.appendChild(card);
+        });
+    }
+
+    function showHome() {
+        document.getElementById('practiceView').classList.remove('active');
+        document.getElementById('homeView').classList.add('active');
+        renderMenu();
+    }
+
+    function startPractice(langKey) {
+        currentLangKey = langKey;
+        currentIndex = 0;
+        document.getElementById('homeView').classList.remove('active');
+        document.getElementById('practiceView').classList.add('active');
+        initCanvas();
+        renderCard();
+    }
+
+    function initCanvas() {
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#212529';
+    }
+
+    function startDrawing(e) { isDrawing = true; draw(e); }
+    function stopDrawing() { isDrawing = false; ctx.beginPath(); }
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        ctx.lineTo(clientX - rect.left, clientY - rect.top);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); });
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function renderCard() {
+        clearCanvas();
+        const lang = database[currentLangKey];
+        const item = lang.items[currentIndex];
+        
+        document.getElementById('guideText').innerText = item.char;
+        document.getElementById('charMeta').innerText = item.class + "｜" + item.name;
+        document.getElementById('charIpa').innerText = item.ipa;
+        document.getElementById('progressText').innerText = (currentIndex + 1) + " / " + lang.items.length;
+    }
+
+    function toggleGuide() {
+        showGuideFlag = !showGuideFlag;
+        document.getElementById('guideText').style.display = showGuideFlag ? 'flex' : 'none';
+    }
+
+    function playAudio() {
+        const lang = database[currentLangKey];
+        const item = lang.items[currentIndex];
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(item.char);
+            utterance.lang = lang.langCode;
+            utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function recordAndNext() {
+        const lang = database[currentLangKey];
+        const item = lang.items[currentIndex];
+        saveProgress(currentLangKey, item.id);
+
+        if (currentIndex < lang.items.length - 1) {
+            currentIndex++;
+            renderCard();
+        } else {
+            alert('已完成本模組所有字母！');
+            showHome();
+        }
+    }
+
+    function prevChar() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            renderCard();
+        }
+    }
+
+    renderMenu();
+</script>
+</body>
+</html>
