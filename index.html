@@ -77,11 +77,6 @@
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .lang-card:active {
-            transform: scale(0.98);
         }
 
         .badge {
@@ -140,11 +135,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 6px;
-        }
-
-        .btn:active {
-            background-color: var(--primary-hover);
         }
 
         .btn.secondary {
@@ -171,7 +161,7 @@
             height: 260px;
             margin: 0 auto;
             border-radius: 12px;
-            background-color: #fafafa;
+            background-color: #ffffff;
             border: 2px dashed #d1d5db;
             overflow: hidden;
         }
@@ -210,27 +200,22 @@
 
 <div class="app-container">
 
-    <!-- 1. 系統主頁 -->
     <div id="homePage" class="page active">
         <div class="header-title">文字系統目錄</div>
         <div class="header-desc">選擇欲學習的文字系統，先進行總覽檢視再開始系統化手寫與發音練習。</div>
         <div id="langList"></div>
     </div>
 
-    <!-- 2. 字母總覽大表頁面 -->
     <div id="overviewPage" class="page">
         <div class="nav-header">
             <button class="btn outline" style="width: auto; padding: 6px 12px;" onclick="showPage('homePage')">← 首頁</button>
             <span id="overviewTitle" class="header-title" style="font-size: 1rem; margin:0;"></span>
         </div>
         <div id="overviewDesc" class="header-desc"></div>
-        
         <button class="btn" style="margin-bottom: 16px;" onclick="startPractice(0)">開始系統化筆順練習</button>
-
         <div id="overviewGrid" class="overview-grid"></div>
     </div>
 
-    <!-- 3. 系統化練習頁面 -->
     <div id="practicePage" class="page">
         <div class="nav-header">
             <button class="btn outline" style="width: auto; padding: 6px 12px;" onclick="showPage('overviewPage')">← 總覽</button>
@@ -252,17 +237,17 @@
                 <canvas id="paintCanvas" width="260" height="260"></canvas>
             </div>
 
-            <div id="statusMsg" class="status-msg">請由點位 1 依次劃過所有數字節點</div>
+            <div id="statusMsg" class="status-msg">請沿著軌道數字順序滑動完成筆劃</div>
 
             <div style="display: flex; gap: 8px; margin-top: 10px;">
                 <button class="btn secondary" onclick="playCurrentAudio()">播放發音</button>
-                <button class="btn outline" onclick="resetCanvas()">重寫</button>
+                <button class="btn outline" onclick="resetCanvas()">清除重寫</button>
             </div>
         </div>
 
         <div style="display: flex; gap: 10px;">
             <button class="btn secondary" onclick="prevPractice()">上一個</button>
-            <button id="nextBtn" class="btn" onclick="nextPractice()">檢驗筆順並下一步</button>
+            <button id="nextBtn" class="btn" onclick="nextPractice()">下一個字母</button>
         </div>
     </div>
 
@@ -270,10 +255,6 @@
 
 <script>
     let registeredLanguages = [];
-    if (window.thaiData) {
-        registeredLanguages.push(window.thaiData);
-    }
-
     let currentLang = null;
     let currentIndex = 0;
     
@@ -314,7 +295,7 @@
         const grid = document.getElementById('overviewGrid');
         grid.innerHTML = '';
 
-        lang.items.forEach((item, idx) => {
+        lang.items.forEach((item) => {
             const el = document.createElement('div');
             el.className = 'grid-item';
             el.onclick = () => playAudio(item.char, lang.langCode);
@@ -336,56 +317,68 @@
         loadPracticeItem();
     }
 
-    function drawGuideCharacter() {
+    function renderCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         const item = currentLang.items[currentIndex];
-        if (!item) return;
+        if (!item || !item.checkpoints || item.checkpoints.length === 0) return;
 
-        ctx.save();
-        ctx.font = '140px "Thonburi", "Leelawadee UI", sans-serif';
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(item.char, 130, 130);
-        ctx.restore();
-    }
+        const pts = item.checkpoints;
 
-    function drawSingleDot(pt, idx, isPassed) {
+        // 1. 繪製標準筆劃底框軌道 (灰色向量路徑)
         ctx.save();
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 13, 0, Math.PI * 2);
-        ctx.fillStyle = isPassed ? '#10b981' : '#e5e7eb';
-        ctx.fill();
-        ctx.strokeStyle = isPassed ? '#059669' : '#9ca3af';
-        ctx.lineWidth = 2;
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(pts[i].x, pts[i].y);
+        }
+        ctx.lineWidth = 26;
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.stroke();
-
-        ctx.fillStyle = isPassed ? '#ffffff' : '#374151';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(idx + 1, pt.x, pt.y);
         ctx.restore();
-    }
 
-    function drawAllCheckpoints() {
-        const item = currentLang.items[currentIndex];
-        if (!item || !item.checkpoints) return;
+        // 2. 繪製使用者已完成的填充筆劃 (深色線條)
+        if (passedCheckpoints.length > 1) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < passedCheckpoints.length; i++) {
+                ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            ctx.lineWidth = 22;
+            ctx.strokeStyle = '#4f46e5';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            ctx.restore();
+        }
 
-        item.checkpoints.forEach((pt, idx) => {
-            const isPassed = passedCheckpoints.includes(idx);
-            drawSingleDot(pt, idx, isPassed);
+        // 3. 繪製軌道節點號碼圈
+        pts.forEach((pt, idx) => {
+            const isPassed = idx < passedCheckpoints.length;
+            const isNext = idx === passedCheckpoints.length;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2);
+            ctx.fillStyle = isPassed ? '#10b981' : (isNext ? '#4f46e5' : '#ffffff');
+            ctx.fill();
+            ctx.strokeStyle = isPassed ? '#059669' : (isNext ? '#3730a3' : '#9ca3af');
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = (isPassed || isNext) ? '#ffffff' : '#4b5563';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(idx + 1, pt.x, pt.y);
+            ctx.restore();
         });
     }
 
-    function setStrokeStyle() {
-        ctx.lineWidth = 10;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#1f2937';
-    }
-
     function loadPracticeItem() {
-        resetCanvas();
+        passedCheckpoints = [];
         const item = currentLang.items[currentIndex];
         
         document.getElementById('practiceProgress').innerText = `${currentIndex + 1} / ${currentLang.items.length}`;
@@ -395,16 +388,15 @@
         document.getElementById('practiceIpa').innerText = "音標與說明：" + item.ipa;
         document.getElementById('practiceZhuyin').innerText = "擬音與發音：" + item.zhuyin;
         
+        renderCanvas();
+        updateStatus("請由數字 1 開始順應軌道劃過節點", "");
         playCurrentAudio();
     }
 
     function resetCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         passedCheckpoints = [];
-        drawGuideCharacter();
-        drawAllCheckpoints();
-        setStrokeStyle();
-        updateStatus("請由點位 1 依次劃過所有數字節點", "");
+        renderCanvas();
+        updateStatus("請由數字 1 開始順應軌道劃過節點", "");
     }
 
     function getCanvasPos(e) {
@@ -421,31 +413,32 @@
         const item = currentLang.items[currentIndex];
         if (!item || !item.checkpoints) return;
 
-        const nextTargetIndex = passedCheckpoints.length;
-        const targetPoint = item.checkpoints[nextTargetIndex];
+        const nextIdx = passedCheckpoints.length;
+        if (nextIdx >= item.checkpoints.length) return;
 
-        if (targetPoint) {
-            const dist = Math.hypot(pos.x - targetPoint.x, pos.y - targetPoint.y);
-            if (dist < 35) {
-                passedCheckpoints.push(nextTargetIndex);
-                drawSingleDot(targetPoint, nextTargetIndex, true);
+        const targetPt = item.checkpoints[nextIdx];
+        const dist = Math.hypot(pos.x - targetPt.x, pos.y - targetPt.y);
+
+        // 手指或筆尖距離目標點 32 像素以內，即自動解鎖該段筆劃
+        if (dist < 32) {
+            passedCheckpoints.push(nextIdx);
+            renderCanvas();
+
+            if (passedCheckpoints.length === item.checkpoints.length) {
+                updateStatus("筆順正確完成！", "success");
             }
         }
     }
 
     function startDrawing(e) {
         isDrawing = true;
-        setStrokeStyle();
         const pos = getCanvasPos(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
+        checkStrokeCheckpoints(pos);
     }
 
     function draw(e) {
         if (!isDrawing) return;
         const pos = getCanvasPos(e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
         checkStrokeCheckpoints(pos);
     }
 
@@ -464,18 +457,15 @@
         const requiredCount = item.checkpoints ? item.checkpoints.length : 0;
 
         if (passedCheckpoints.length >= requiredCount) {
-            updateStatus("筆順正確！進入下一個項目", "success");
-            setTimeout(() => {
-                if (currentIndex < currentLang.items.length - 1) {
-                    currentIndex++;
-                    loadPracticeItem();
-                } else {
-                    alert("已完成本模組所有字母與聲調練習！");
-                    showPage('overviewPage');
-                }
-            }, 400);
+            if (currentIndex < currentLang.items.length - 1) {
+                currentIndex++;
+                loadPracticeItem();
+            } else {
+                alert("已完成本模組所有字母與聲調練習！");
+                showPage('overviewPage');
+            }
         } else {
-            updateStatus("未依序劃過所有點位，請重新書寫", "error");
+            updateStatus("未完全完成軌道筆劃，請依序劃過點位", "error");
         }
     }
 
