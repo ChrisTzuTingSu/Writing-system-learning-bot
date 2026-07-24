@@ -1,295 +1,7 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>文字系統互動學習平台</title>
-    <script src="data/thai.js"></script>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-sub: #6b7280;
-            --badge-mid: #0284c7;
-            --badge-high: #e11d48;
-            --badge-low: #7c3aed;
-            --success: #10b981;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 16px;
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 440px;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .header-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: var(--text-main);
-        }
-
-        .header-desc {
-            font-size: 0.85rem;
-            color: var(--text-sub);
-            margin-bottom: 16px;
-            line-height: 1.4;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e5e7eb;
-        }
-
-        .lang-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .lang-card:active {
-            transform: scale(0.98);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            color: white;
-            font-weight: 600;
-        }
-
-        .badge.mid { background-color: var(--badge-mid); }
-        .badge.high { background-color: var(--badge-high); }
-        .badge.low { background-color: var(--badge-low); }
-
-        .overview-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .grid-item {
-            background: var(--card-bg);
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
-
-        .grid-char {
-            font-size: 2.5rem;
-            font-family: "Thonburi", "Leelawadee UI", sans-serif;
-            margin: 4px 0;
-        }
-
-        .grid-info {
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            text-align: center;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            background-color: var(--primary);
-            color: white;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn:active {
-            background-color: var(--primary-hover);
-        }
-
-        .btn.secondary {
-            background-color: #e5e7eb;
-            color: var(--text-main);
-        }
-
-        .btn.outline {
-            background-color: transparent;
-            border: 1px solid #d1d5db;
-            color: var(--text-main);
-        }
-
-        .nav-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .canvas-area {
-            position: relative;
-            width: 260px;
-            height: 260px;
-            margin: 0 auto;
-            border-radius: 12px;
-            background-color: #fafafa;
-            border: 2px dashed #d1d5db;
-            overflow: hidden;
-        }
-
-        .canvas-guide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 150px;
-            color: rgba(0, 0, 0, 0.06);
-            font-family: "Thonburi", "Leelawadee UI", sans-serif;
-            pointer-events: none;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-        }
-
-        .status-msg {
-            font-size: 0.85rem;
-            text-align: center;
-            margin-top: 8px;
-            min-height: 20px;
-            font-weight: 600;
-        }
-
-        .status-msg.error { color: var(--badge-high); }
-        .status-msg.success { color: var(--success); }
-
-        .phonetic-box {
-            background: #eef2ff;
-            border-radius: 8px;
-            padding: 8px;
-            margin: 8px 0;
-            font-size: 0.85rem;
-            color: #3730a3;
-        }
-    </style>
-</head>
-<body>
-
-<div class="app-container">
-
-    <!-- 1. 系統主頁 -->
-    <div id="homePage" class="page active">
-        <div class="header-title">文字系統目錄</div>
-        <div class="header-desc">選擇欲學習的文字系統，先進行總覽檢視再開始系統化手寫與發音練習。</div>
-        <div id="langList"></div>
-    </div>
-
-    <!-- 2. 字母總覽大表頁面 -->
-    <div id="overviewPage" class="page">
-        <div class="nav-header">
-            <button class="btn outline" style="width: auto; padding: 6px 12px;" onclick="showPage('homePage')">← 首頁</button>
-            <span id="overviewTitle" class="header-title" style="font-size: 1rem; margin:0;"></span>
-        </div>
-        <div id="overviewDesc" class="header-desc"></div>
-        
-        <button class="btn" style="margin-bottom: 16px;" onclick="startPractice(0)">開始系統化筆順練習</button>
-
-        <div id="overviewGrid" class="overview-grid"></div>
-    </div>
-
-    <!-- 3. 系統化練習頁面 -->
-    <div id="practicePage" class="page">
-        <div class="nav-header">
-            <button class="btn outline" style="width: auto; padding: 6px 12px;" onclick="showPage('overviewPage')">← 總覽</button>
-            <span id="practiceProgress" style="font-size: 0.85rem; color: var(--text-sub);">1 / 4</span>
-        </div>
-
-        <div class="card" style="text-align: center;">
-            <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: 6px;">
-                <span id="practiceBadge" class="badge"></span>
-                <span id="practiceName" style="font-size: 0.9rem; font-weight: 600;"></span>
-            </div>
-
-            <div class="phonetic-box">
-                <div id="practiceIpa"></div>
-                <div id="practiceZhuyin" style="margin-top: 2px; font-weight: 600;"></div>
-            </div>
-
-            <div class="canvas-area">
-                <div id="canvasGuide" class="canvas-guide"></div>
-                <canvas id="paintCanvas" width="260" height="260"></canvas>
-            </div>
-
-            <div id="statusMsg" class="status-msg">請依據筆順畫出完整字形</div>
-
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn secondary" onclick="playCurrentAudio()">播放發音</button>
-                <button class="btn outline" onclick="resetCanvas()">重寫</button>
-            </div>
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-            <button class="btn secondary" onclick="prevPractice()">上一個</button>
-            <button id="nextBtn" class="btn" onclick="nextPractice()">檢驗筆順並下一步</button>
-        </div>
-    </div>
-
-</div>
-
-<script>
     const registeredLanguages = [window.thaiData];
     let currentLang = null;
     let currentIndex = 0;
     
-    // 繪圖與筆順檢測變數
     const canvas = document.getElementById('paintCanvas');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
@@ -300,18 +12,18 @@
         document.getElementById(pageId).classList.add('active');
     }
 
-    // 初始化首頁
     function initHome() {
         const langList = document.getElementById('langList');
         langList.innerHTML = '';
         registeredLanguages.forEach(lang => {
+            if (!lang) return;
             const card = document.createElement('div');
             card.className = 'card lang-card';
             card.onclick = () => openOverview(lang);
             card.innerHTML = `
                 <div>
                     <div style="font-weight: 700; font-size: 1.05rem;">${lang.title}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px;">收錄 ${lang.items.length} 個基礎符號</div>
+                    <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px;">收錄 ${lang.items.length} 個符號與聲調</div>
                 </div>
                 <span style="font-size: 1.2rem; color: var(--text-sub);">→</span>
             `;
@@ -319,7 +31,6 @@
         });
     }
 
-    // 開啟總覽頁面
     function openOverview(lang) {
         currentLang = lang;
         document.getElementById('overviewTitle').innerText = lang.title;
@@ -344,7 +55,6 @@
         showPage('overviewPage');
     }
 
-    // 開始練習
     function startPractice(index) {
         currentIndex = index;
         showPage('practicePage');
@@ -353,10 +63,34 @@
     }
 
     function initCanvas() {
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 10;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.strokeStyle = '#1f2937';
+    }
+
+    function drawCheckpointsOverlay() {
+        const item = currentLang.items[currentIndex];
+        if (!item.checkpoints) return;
+
+        item.checkpoints.forEach((pt, idx) => {
+            const isPassed = passedCheckpoints.includes(idx);
+            
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2);
+            ctx.fillStyle = isPassed ? '#10b981' : '#e5e7eb';
+            ctx.fill();
+            ctx.strokeStyle = isPassed ? '#059669' : '#9ca3af';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = isPassed ? '#ffffff' : '#374151';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(idx + 1, pt.x, pt.y);
+        });
+        initCanvas();
     }
 
     function loadPracticeItem() {
@@ -367,22 +101,23 @@
         document.getElementById('practiceName').innerText = item.name + " (" + item.meaning + ")";
         document.getElementById('practiceBadge').innerText = item.className;
         document.getElementById('practiceBadge').className = `badge ${item.class}`;
-        document.getElementById('practiceIpa').innerText = "標準音標：" + item.ipa;
-        document.getElementById('practiceZhuyin').innerText = "近似發音：" + item.zhuyin;
+        document.getElementById('practiceIpa').innerText = "音標與說明：" + item.ipa;
+        document.getElementById('practiceZhuyin').innerText = "擬音與發音：" + item.zhuyin;
         document.getElementById('canvasGuide').innerText = item.char;
         
         passedCheckpoints = [];
-        updateStatus("請依照筆順起筆與書寫", "");
+        drawCheckpointsOverlay();
+        updateStatus("請由點位 1 依次劃過所有數字節點", "");
         playCurrentAudio();
     }
 
     function resetCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         passedCheckpoints = [];
-        updateStatus("請依照筆順起筆與書寫", "");
+        drawCheckpointsOverlay();
+        updateStatus("請由點位 1 依次劃過所有數字節點", "");
     }
 
-    // 筆劃座標監聽與節點匹配算法
     function getCanvasPos(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -397,12 +132,15 @@
         const item = currentLang.items[currentIndex];
         if (!item.checkpoints) return;
 
-        const targetPoint = item.checkpoints[passedCheckpoints.length];
+        const nextTargetIndex = passedCheckpoints.length;
+        const targetPoint = item.checkpoints[nextTargetIndex];
+
         if (targetPoint) {
             const dist = Math.hypot(pos.x - targetPoint.x, pos.y - targetPoint.y);
-            // 容許半徑 35px
+            // 判定容許半徑設為 35 像素
             if (dist < 35) {
-                passedCheckpoints.push(targetPoint);
+                passedCheckpoints.push(nextTargetIndex);
+                drawCheckpointsOverlay();
             }
         }
     }
@@ -423,9 +161,7 @@
         checkStrokeCheckpoints(pos);
     }
 
-    function stopDrawing() {
-        isDrawing = false;
-    }
+    function stopDrawing() { isDrawing = false; }
 
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
@@ -439,20 +175,19 @@
         const item = currentLang.items[currentIndex];
         const requiredCount = item.checkpoints ? item.checkpoints.length : 0;
 
-        // 筆順通過條件：通過所有關鍵節點
         if (passedCheckpoints.length >= requiredCount) {
-            updateStatus("筆順正確！進入下一個字母", "success");
+            updateStatus("筆順正確！進入下一個項目", "success");
             setTimeout(() => {
                 if (currentIndex < currentLang.items.length - 1) {
                     currentIndex++;
                     loadPracticeItem();
                 } else {
-                    alert("已完成本模組所有字母練習！");
+                    alert("已完成本模組所有字母與聲調練習！");
                     showPage('overviewPage');
                 }
-            }, 500);
+            }, 400);
         } else {
-            updateStatus("筆順或路徑不完整，請順應頭圈方向重新書寫", "error");
+            updateStatus("未依序劃過所有點位，請重新書寫", "error");
         }
     }
 
@@ -485,6 +220,3 @@
     }
 
     initHome();
-</script>
-</body>
-</html>
