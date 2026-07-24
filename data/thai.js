@@ -4,16 +4,43 @@ window.thaiData = {
     langCode: "th-TH",
     description: "包含 44 個輔音（劃分為中音、高音、低音三類）與 4 個標準聲調符號。",
     items: [
-        // 中音輔音 (Mid Class Consonants)
         { 
-            id: "th_1", char: "ก", name: "ก ไก่ (Ko Kai)", ipa: "/kɔː/", zhuyin: "ㄍㄛ", 
-            desc: "中音輔音。無頭圈，左下向上起筆，頂端有鳥喙折角。", class: "mid", className: "中音", meaning: "雞", 
-            checkpoints: [{x: 75, y: 210}, {x: 75, y: 120}, {x: 100, y: 95}, {x: 130, y: 50}, {x: 185, y: 50}, {x: 185, y: 210}] 
+            id: "th_1", 
+            char: "ก", 
+            name: "ก ไก่ (Ko Kai)", 
+            ipa: "/kɔː/", 
+            zhuyin: "ㄍㄛ", 
+            desc: "中音輔音。無頭圈，左下向上起筆，頂端有鳥喙折角。", 
+            class: "mid", 
+            className: "中音", 
+            meaning: "雞", 
+            checkpoints: [
+                {x: 65, y: 220},  // 1. 起筆左下角
+                {x: 65, y: 110},  // 2. 左向上直畫
+                {x: 95, y: 85},   // 3. 鳥喙內凹轉折
+                {x: 130, y: 40},  // 4. 鳥喙尖端最高點
+                {x: 195, y: 40},  // 5. 頂部右拱弧
+                {x: 195, y: 220}  // 6. 收筆右下角
+            ] 
         },
         { 
-            id: "th_2", char: "จ", name: "จ จาน (Cho Chan)", ipa: "/tɕɔː/", zhuyin: "ㄐㄛ", 
-            desc: "中音輔音。頂端順時針圓圈起筆，向下斜劃後彎回右上。", class: "mid", className: "中音", meaning: "盤子", 
-            checkpoints: [{x: 130, y: 75}, {x: 160, y: 75}, {x: 65, y: 210}, {x: 195, y: 135}] 
+            id: "th_2", 
+            char: "จ", 
+            name: "จ จาน (Cho Chan)", 
+            ipa: "/tɕɔː/", 
+            zhuyin: "ㄐㄛ", 
+            desc: "中音輔音。頂端順時針圓圈起筆，向下斜劃後彎回右上。", 
+            class: "mid", 
+            className: "中音", 
+            meaning: "盤子", 
+            checkpoints: [
+                {x: 130, y: 75},  // 1. 圈頭起筆
+                {x: 165, y: 80},  // 2. 圈頭右弧
+                {x: 140, y: 110}, // 3. 圈頭底轉折
+                {x: 60, y: 220},  // 4. 左下滑弧底點
+                {x: 130, y: 220}, // 5. 底部彎弧
+                {x: 200, y: 120}  // 6. 向上拋尾終點
+            ] 
         },
         { 
             id: "th_3", char: "ฎ", name: "ฎ ชฎา (Do Chada)", ipa: "/dɔː/", zhuyin: "ㄉㄛ", 
